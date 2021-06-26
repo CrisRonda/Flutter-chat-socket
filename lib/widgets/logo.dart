@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
+
 class Logo extends StatelessWidget {
-  const Logo({Key? key}) : super(key: key);
+  final String title;
+  const Logo({Key? key, this.title = "Chat App"}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +19,7 @@ class Logo extends StatelessWidget {
               SizedBox(
                 height: 16,
               ),
-              Text('Chat App', style: TextStyle(fontSize: 32))
+              Text(this.title, style: TextStyle(fontSize: 32))
             ],
           ),
         ),
