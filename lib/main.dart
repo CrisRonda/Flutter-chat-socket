@@ -10,7 +10,7 @@ import './routes/routes.dart';
      return MaterialApp(
        title: 'Chat App',
        debugShowCheckedModeBanner: false,
-       initialRoute: 'loading',
+       initialRoute: 'login',
        routes: appRoutes,
      );
    }
