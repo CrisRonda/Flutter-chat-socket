@@ -56,9 +56,6 @@ class __FormState extends State<_Form> {
     final authSevice = Provider.of<AuthService>(
       context,
     );
-    final completeFields = emailTxtController.text.trim().isNotEmpty &&
-        nameTxtController.text.trim().isNotEmpty &&
-        passwordTxtController.text.trim().isNotEmpty;
     return Container(
       margin: EdgeInsets.only(top: 40),
       padding: EdgeInsets.symmetric(horizontal: 50),
@@ -84,7 +81,7 @@ class __FormState extends State<_Form> {
           ),
           CustomButton(
             label: "Registro",
-            onPressed: (authSevice.loadingAuth || !completeFields)
+            onPressed: (authSevice.loadingAuth)
                 ? null
                 : () async {
                     FocusScope.of(context).unfocus();

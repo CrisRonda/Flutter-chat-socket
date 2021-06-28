@@ -1,6 +1,10 @@
-import 'package:chat_app_sockets/models/user.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import 'package:pull_to_refresh/pull_to_refresh.dart';
+
+import 'package:chat_app_sockets/models/user.dart';
+import 'package:chat_app_sockets/services/auth_service.dart';
 
 class UsersPage extends StatefulWidget {
   @override
@@ -28,12 +32,20 @@ class _UsersPageState extends State<UsersPage> {
   ];
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
+    final user = authService.user;
     return Scaffold(
         appBar: AppBar(
-          title: Text("Cristian Ronda"),
+          title: Text(user.name),
           elevation: 1,
           backgroundColor: this.colorHeader,
-          leading: IconButton(onPressed: () {}, icon: Icon(Icons.exit_to_app)),
+          leading: IconButton(
+              onPressed: () async {
+                // TODO: off socket
+                await AuthService.logout();
+                Navigator.pushReplacementNamed(context, 'login');
+              },
+              icon: Icon(Icons.exit_to_app)),
           actions: [
             Container(
               margin: EdgeInsets.only(right: 12),
@@ -50,7 +62,10 @@ class _UsersPageState extends State<UsersPage> {
           primary: true,
           onRefresh: () => _loadUsers(),
           header: WaterDropHeader(
-            complete: Icon(Icons.check_circle,color: Colors.green,),
+            complete: Icon(
+              Icons.check_circle,
+              color: Colors.green,
+            ),
             failed: Icon(Icons.error_rounded, color: Colors.red),
           ),
           child: _userListView(),

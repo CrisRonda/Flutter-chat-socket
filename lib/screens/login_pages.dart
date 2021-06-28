@@ -70,9 +70,7 @@ class __FormState extends State<_Form> {
           ),
           CustomButton(
             label: "Login",
-            onPressed: (authSevice.loadingAuth ||
-                    emailTxtController.text.isEmpty ||
-                    passwordTxtController.text.isEmpty)
+            onPressed: (authSevice.loadingAuth)
                 ? null
                 : () async {
                     FocusScope.of(context).unfocus();

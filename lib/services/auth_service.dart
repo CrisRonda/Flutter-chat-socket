@@ -10,8 +10,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:chat_app_sockets/global/enviroments.dart';
 import 'package:chat_app_sockets/models/login_response.dart';
 
-
-
 class AuthService with ChangeNotifier {
   late User user;
   final _storage = new FlutterSecureStorage();
@@ -20,11 +18,10 @@ class AuthService with ChangeNotifier {
 
   bool get loadingAuth => this._loading;
 
-   _changeLoadingState(bool value) {
+  _changeLoadingState(bool value) {
     this._loading = value;
     notifyListeners();
   }
-
 
   static Future<String?> getToken() async {
     final _storage = new FlutterSecureStorage();
@@ -32,7 +29,7 @@ class AuthService with ChangeNotifier {
     return token;
   }
 
-  static Future<String?> deleteToken() async {
+  static Future<String?> logout() async {
     final _storage = new FlutterSecureStorage();
     await _storage.delete(key: "token");
   }
@@ -60,9 +57,10 @@ class AuthService with ChangeNotifier {
     await _storage.write(key: "token", value: token);
   }
 
-   Future<AuthResponse> register(String name,String email, String password) async {
+  Future<AuthResponse> register(
+      String name, String email, String password) async {
     _changeLoadingState(true);
-    final data = {"name":name, "email": email, "password": password};
+    final data = {"name": name, "email": email, "password": password};
     final resp = await http.post(Uri.parse('${Enviroments.apiURL}/login/new'),
         body: jsonEncode(data), headers: {'Content-type': 'application/json'});
     final registerResponse = registerResponseFromJson(resp.body);
@@ -70,4 +68,21 @@ class AuthService with ChangeNotifier {
     return AuthResponse(registerResponse.ok, registerResponse.msj);
   }
 
+  Future<AuthResponse> isUserLogged() async {
+    final token = await _storage.read(key: 'token');
+    final resp = await http.get(Uri.parse('${Enviroments.apiURL}/login/renew'),
+        headers: {
+          'Content-type': 'application/json',
+          'x-token': token.toString()
+        });
+    final loginresponse = loginResponseFromJson(resp.body);
+    if (loginresponse.ok) {
+      this.user = loginresponse.data!.user;
+      await _saveToken(loginresponse.data!.token);
+    } else {
+      logout();
+    }
+    _changeLoadingState(false);
+    return AuthResponse(loginresponse.ok, loginresponse.msj);
+  }
 }
