@@ -17,7 +17,7 @@ class SocketService with ChangeNotifier {
 
   void connect() async {
     final token = await AuthService.getToken();
-    
+
     this._socket = IO.io(
         Enviroments.socketURL,
         IO.OptionBuilder()
@@ -34,6 +34,11 @@ class SocketService with ChangeNotifier {
     });
 
     this._socket.onConnectError((_) {
+      this._serverStatus = ServerStatus.Offline;
+      notifyListeners();
+    });
+
+    this._socket.onConnectTimeout((_) {
       this._serverStatus = ServerStatus.Offline;
       notifyListeners();
     });
