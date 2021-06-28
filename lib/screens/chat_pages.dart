@@ -1,8 +1,16 @@
 import 'dart:io';
 
-import 'package:chat_app_sockets/widgets/chat_message.dart';
+import 'package:chat_app_sockets/helpers/show_snack.dart';
+import 'package:chat_app_sockets/models/message_response.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import 'package:chat_app_sockets/services/chat_service.dart';
+import 'package:chat_app_sockets/services/auth_service.dart';
+import 'package:chat_app_sockets/services/socket_service.dart';
+import 'package:chat_app_sockets/widgets/chat_message.dart';
+import 'package:chat_app_sockets/models/user.dart';
 
 class ChatPage extends StatefulWidget {
   @override
@@ -14,22 +22,61 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
   final Color colorHeader = Colors.black54;
   List<ChatMessage> _messages = [];
   bool _enableSendButton = false;
+  late ChatService chatService;
+  late SocketService socketService;
+  late AuthService authService;
+
+  @override
+  void initState() {
+    super.initState();
+    this.chatService = Provider.of<ChatService>(context, listen: false);
+    this.socketService = Provider.of<SocketService>(context, listen: false);
+    this.authService = Provider.of<AuthService>(context, listen: false);
+    this.socketService.socket.on("private-room", _subscribeToPrivateRoomChat);
+    _loadMessages(this.chatService.userReceive.uid);
+  }
+
+  _subscribeToPrivateRoomChat(dynamic data) {
+    ChatMessage newMessage = ChatMessage(
+        message: data['message'],
+        uid: data['uidSender'],
+        animationController:
+            AnimationController(vsync: this, duration: Duration(seconds: 1)));
+    setState(() {
+      _messages.insert(0, newMessage);
+    });
+    newMessage.animationController.forward();
+  }
+
+  _loadMessages(String uidReceiver) async {
+    List<Message> chat = await this.chatService.getChat(uidReceiver);
+    final history = chat.map((msg) => ChatMessage(
+        message: msg.message,
+        uid: msg.uidSender,
+        animationController: AnimationController(
+            vsync: this, duration: Duration(milliseconds: 500))
+          ..forward()));
+    setState(() {
+      this._messages.insertAll(0, history);
+    });
+  }
 
   @override
   void dispose() {
-    // TODO: implement dispose to socket
-    // clear _message[]
     for (ChatMessage message in _messages) {
       message.animationController.dispose();
     }
+    this.socketService.socket.off("private-room");
     super.dispose();
   }
 
   final FocusNode _focusNode = FocusNode();
   @override
   Widget build(BuildContext context) {
+    final User userToSendMessage = this.chatService.userReceive;
+
     return Scaffold(
-      appBar: _appBar(),
+      appBar: _appBar(userToSendMessage),
       body: Container(
         child: Column(
           children: [
@@ -53,16 +100,17 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     );
   }
 
-  AppBar _appBar() {
+  AppBar _appBar(User user) {
     return AppBar(
       backgroundColor: this.colorHeader,
+      centerTitle: true,
       title: Column(
         children: [
           CircleAvatar(
             backgroundColor: Colors.amber,
             maxRadius: 14,
             child: Text(
-              "CR",
+              user.name.substring(0, 2),
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.white,
@@ -72,7 +120,7 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
           SizedBox(
             height: 4,
           ),
-          Text('Cristian Ronda', style: TextStyle(fontSize: 16))
+          Text(user.name, style: TextStyle(fontSize: 16))
         ],
       ),
     );
@@ -124,9 +172,15 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     if (message.trim().length == 0) {
       return;
     }
+    if (this.socketService.serverStatus == ServerStatus.Offline) {
+      return showSnackBar(
+          context: context,
+          title: "Lo sentimos, estamos fuera de linea",
+          color: Colors.red.shade600);
+    }
     final newMessage = ChatMessage(
       message: message,
-      uuid: '1234',
+      uid: authService.user.uid,
       animationController: AnimationController(
           vsync: this, duration: Duration(milliseconds: 432)),
     );
@@ -134,6 +188,11 @@ class _ChatPageState extends State<ChatPage> with TickerProviderStateMixin {
     newMessage.animationController.forward();
     setState(() {
       _enableSendButton = false;
+    });
+    this.socketService.emit('private-room', {
+      'uidSender': this.authService.user.uid,
+      'uidReceiver': this.chatService.userReceive.uid,
+      'message': message,
     });
     _messageTxtController.clear();
     _focusNode.requestFocus();

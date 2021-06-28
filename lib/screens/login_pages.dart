@@ -1,4 +1,3 @@
-import 'package:chat_app_sockets/helpers/show_snack.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +7,8 @@ import 'package:chat_app_sockets/widgets/logo.dart';
 import 'package:chat_app_sockets/services/auth_service.dart';
 import 'package:chat_app_sockets/widgets/custom_button.dart';
 import 'package:chat_app_sockets/widgets/labels.dart';
+import 'package:chat_app_sockets/helpers/show_snack.dart';
+import 'package:chat_app_sockets/services/socket_service.dart';
 
 class LoginPage extends StatelessWidget {
   @override
@@ -50,6 +51,7 @@ class __FormState extends State<_Form> {
     final authSevice = Provider.of<AuthService>(
       context,
     );
+    final socketService = Provider.of<SocketService>(context);
 
     return Container(
       margin: EdgeInsets.only(top: 40),
@@ -78,6 +80,7 @@ class __FormState extends State<_Form> {
                         emailTxtController.text.trim(),
                         passwordTxtController.text.trim());
                     if (loginSuccess.ok) {
+                      socketService.connect();
                       Navigator.pushReplacementNamed(context, "users");
                       return showSnackBar(
                         context: context,

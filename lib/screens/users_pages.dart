@@ -1,3 +1,5 @@
+import 'package:chat_app_sockets/helpers/show_snack.dart';
+import 'package:chat_app_sockets/services/chat_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,6 +7,8 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import 'package:chat_app_sockets/models/user.dart';
 import 'package:chat_app_sockets/services/auth_service.dart';
+import 'package:chat_app_sockets/services/socket_service.dart';
+import 'package:chat_app_sockets/services/users_services.dart';
 
 class UsersPage extends StatefulWidget {
   @override
@@ -15,25 +19,24 @@ class _UsersPageState extends State<UsersPage> {
   final Color colorHeader = Colors.black54;
   RefreshController _refreshController =
       RefreshController(initialRefresh: false);
-  final users = [
-    User(
-        email: 'email@email', name: "Zaira Ronda", online: false, uid: "12323"),
-    User(email: 'emai1l@email', name: "Amelia Ronda", online: true, uid: "asd"),
-    User(
-        email: 'email2@email',
-        name: "Jorge Ronda",
-        online: false,
-        uid: "43efs"),
-    User(
-        email: 'email3@email',
-        name: "Alexandra Ronda",
-        online: true,
-        uid: "6543"),
-  ];
+  final userServices = UsersServices();
+
+  List<User> users = [];
+  bool isMounted = false;
+
+  @override
+  void initState() {
+    this._loadUsers();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
+    final socketService = Provider.of<SocketService>(context);
     final user = authService.user;
+    final isServerOffline = ServerStatus.Offline == socketService.serverStatus;
+
     return Scaffold(
         appBar: AppBar(
           title: Text(user.name),
@@ -41,7 +44,7 @@ class _UsersPageState extends State<UsersPage> {
           backgroundColor: this.colorHeader,
           leading: IconButton(
               onPressed: () async {
-                // TODO: off socket
+                socketService.disconnect();
                 await AuthService.logout();
                 Navigator.pushReplacementNamed(context, 'login');
               },
@@ -49,10 +52,15 @@ class _UsersPageState extends State<UsersPage> {
           actions: [
             Container(
               margin: EdgeInsets.only(right: 12),
-              child: Icon(
-                Icons.online_prediction_sharp,
-                color: Colors.greenAccent.shade400,
-              ),
+              child: isServerOffline
+                  ? Icon(
+                      Icons.offline_bolt_outlined,
+                      color: Colors.red.shade400,
+                    )
+                  : Icon(
+                      Icons.flash_on_outlined,
+                      color: Colors.greenAccent.shade400,
+                    ),
             )
           ],
         ),
@@ -81,7 +89,12 @@ class _UsersPageState extends State<UsersPage> {
   }
 
   ListTile _userListTile(User user) {
+    final chatService = Provider.of<ChatService>(context, listen: false);
     return ListTile(
+      onTap: () {
+        chatService.userReceive = user;
+        Navigator.pushNamed(context, "chat");
+      },
       title: Text(user.name),
       subtitle: Text(user.email),
       trailing: Container(
@@ -100,7 +113,23 @@ class _UsersPageState extends State<UsersPage> {
   }
 
   _loadUsers() async {
-    await Future.delayed(Duration(milliseconds: 1000));
+    this.users = await userServices.getUsers();
+
+    if (this.users.length == 0) {
+      showSnackBar(
+          context: context,
+          title: "No hay usuarios conectados",
+          color: Colors.red);
+    }
+
+    if (isMounted) {
+      showSnackBar(
+        context: context,
+        title: "Lista actualizada",
+      );
+    }
+    this.isMounted = true;
+    setState(() {});
     _refreshController.refreshCompleted();
   }
 }
