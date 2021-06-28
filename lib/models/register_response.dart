@@ -2,13 +2,14 @@ import 'dart:convert';
 
 import 'package:chat_app_sockets/models/auth_data.dart';
 
-LoginResponse loginResponseFromJson(String str) =>
-    LoginResponse.fromJson(json.decode(str));
+RegisterResponse registerResponseFromJson(String str) =>
+    RegisterResponse.fromJson(json.decode(str));
 
-String loginResponseToJson(LoginResponse data) => json.encode(data.toJson());
+String registerResponseToJson(RegisterResponse data) =>
+    json.encode(data.toJson());
 
-class LoginResponse {
-  LoginResponse({
+class RegisterResponse {
+  RegisterResponse({
     this.ok = false,
     this.msj = '',
     this.data,
@@ -18,7 +19,8 @@ class LoginResponse {
   String msj;
   Data? data;
 
-  factory LoginResponse.fromJson(Map<String, dynamic> json) => LoginResponse(
+  factory RegisterResponse.fromJson(Map<String, dynamic> json) =>
+      RegisterResponse(
         ok: json["ok"],
         msj: json["msj"],
         data: json.containsKey("data")
@@ -29,6 +31,6 @@ class LoginResponse {
   Map<String, dynamic> toJson() => {
         "ok": ok,
         "msj": msj,
-        "data": data!.toJson(),
+        "data": data,
       };
 }

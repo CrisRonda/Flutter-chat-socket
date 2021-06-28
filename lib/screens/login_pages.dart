@@ -80,7 +80,7 @@ class __FormState extends State<_Form> {
                         emailTxtController.text.trim(),
                         passwordTxtController.text.trim());
                     if (loginSuccess.ok) {
-                      // nav to home
+                      Navigator.pushReplacementNamed(context, "users");
                       return showSnackBar(
                         context: context,
                         color: Colors.green,

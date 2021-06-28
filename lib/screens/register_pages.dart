@@ -1,10 +1,14 @@
-import 'package:chat_app_sockets/widgets/custom_button.dart';
-import 'package:chat_app_sockets/widgets/labels.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
+
 import 'package:chat_app_sockets/widgets/custom_input.dart';
 import 'package:chat_app_sockets/widgets/logo.dart';
+import 'package:chat_app_sockets/helpers/show_snack.dart';
+import 'package:chat_app_sockets/services/auth_service.dart';
+import 'package:chat_app_sockets/widgets/custom_button.dart';
+import 'package:chat_app_sockets/widgets/labels.dart';
 
 class RegisterPage extends StatelessWidget {
   @override
@@ -49,6 +53,12 @@ class __FormState extends State<_Form> {
   final passwordTxtController = TextEditingController();
   @override
   Widget build(BuildContext context) {
+    final authSevice = Provider.of<AuthService>(
+      context,
+    );
+    final completeFields = emailTxtController.text.trim().isNotEmpty &&
+        nameTxtController.text.trim().isNotEmpty &&
+        passwordTxtController.text.trim().isNotEmpty;
     return Container(
       margin: EdgeInsets.only(top: 40),
       padding: EdgeInsets.symmetric(horizontal: 50),
@@ -74,9 +84,29 @@ class __FormState extends State<_Form> {
           ),
           CustomButton(
             label: "Registro",
-            onPressed: () {
-              print("Registrarse!");
-            },
+            onPressed: (authSevice.loadingAuth || !completeFields)
+                ? null
+                : () async {
+                    FocusScope.of(context).unfocus();
+                    final registerSuccess = await authSevice.register(
+                      nameTxtController.text.trim(),
+                      emailTxtController.text.trim(),
+                      passwordTxtController.text.trim(),
+                    );
+                    if (registerSuccess.ok) {
+                      Navigator.pushReplacementNamed(context, "login");
+                      return showSnackBar(
+                        context: context,
+                        color: Colors.green,
+                        title: registerSuccess.msj,
+                      );
+                    }
+                    return showSnackBar(
+                      context: context,
+                      color: Colors.red,
+                      title: registerSuccess.msj,
+                    );
+                  },
           )
         ],
       ),
